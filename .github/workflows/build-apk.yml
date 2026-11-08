@@ -2,7 +2,7 @@ name: Build APK
 
 on:
   push:
-    branches: [piano]
+    branches: [drift]
   workflow_dispatch:
 
 permissions:
@@ -31,13 +31,13 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: piano-practice-apk
+          name: neon-drift-apk
           path: app/build/outputs/apk/debug/app-debug.apk
 
       - name: Publish APK as a release (direct download, no zip)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk piano-practice.apk
-          gh release delete piano --yes --cleanup-tag || true
-          gh release create piano piano-practice.apk --target "${{ github.sha }}" --title "Рояль" --notes "Сборка приложения «Рояль». Скачайте piano-practice.apk и установите." 
+          cp app/build/outputs/apk/debug/app-debug.apk neon-drift.apk
+          gh release delete drift --yes --cleanup-tag || true
+          gh release create drift neon-drift.apk --target "${{ github.sha }}" --title "Neon Drift" --notes "Сборка приложения «Neon Drift». Скачайте neon-drift.apk и установите." 
