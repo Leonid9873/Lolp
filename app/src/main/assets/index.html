@@ -1518,12 +1518,16 @@ var MAPS=[
 
 
 /* ======================================================
-   PIANIST AVATAR: body, legs, two arms with IK, hands that follow the keys
+   PIANIST AVATAR: detailed body, face, two arms with IK, hands with fingers
    ====================================================== */
-var AV={g:null,x:0,hands:[],held:[0,0],idle:0,headParts:[],foot:null,torso:null,pedalT:0};
-var ARM1=0.30,ARM2=0.28;
+var AV={g:null,sb:null,x:0,hands:[],idle:0,headParts:[],foot:null,torso:null,head:null,pedalT:0,armMats:[]};
+var ARM1=0.30,ARM2=0.28,HSCALE=0.8;
+function ell(parent,r,sx,sy,sz,x,y,z,mat,seg){
+  var m=new THREE.Mesh(new THREE.SphereGeometry(r,seg||18,Math.max(8,Math.floor((seg||18)*0.7))),mat);
+  m.scale.set(sx,sy,sz);m.position.set(x,y,z);m.castShadow=true;parent.add(m);return m;
+}
 function limb(parent,r0,r1,mat){
-  var m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r0,1,12),mat);
+  var m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r0,1,14),mat);
   m.castShadow=true;parent.add(m);return m;
 }
 var _up=new THREE.Vector3(0,1,0),_d=new THREE.Vector3(),_q=new THREE.Quaternion();
@@ -1542,70 +1546,99 @@ function ik(S,W,l1,l2,pole){
   var wr=new THREE.Vector3().copy(S).addScaledVector(d,dist);
   return {elbow:mid.addScaledVector(pp,h),wrist:wr};
 }
+function fingerChain(parent,x,z,len,r,mat,rotY){
+  var p1=new THREE.Group();p1.position.set(x,0,z);p1.rotation.y=rotY||0;parent.add(p1);
+  var l1=len*0.55,l2=len*0.45;
+  ell(p1,r*1.05,1,1,1,0,0,0,mat,8);
+  var s1=new THREE.Mesh(new THREE.CylinderGeometry(r*0.92,r,l1,8),mat);s1.rotation.x=Math.PI/2;s1.position.z=-l1/2;s1.castShadow=true;p1.add(s1);
+  var p2=new THREE.Group();p2.position.z=-l1;p1.add(p2);
+  ell(p2,r*0.95,1,1,1,0,0,0,mat,8);
+  var s2=new THREE.Mesh(new THREE.CylinderGeometry(r*0.8,r*0.92,l2,8),mat);s2.rotation.x=Math.PI/2;s2.position.z=-l2/2;s2.castShadow=true;p2.add(s2);
+  ell(p2,r*0.82,1,1,1.05,0,0,-l2,mat,8);
+  return {p1:p1,p2:p2,c1:0,c2:0};
+}
 function buildAvatar(){
   var g=new THREE.Group();scene.add(g);AV.g=g;
   var sb=new THREE.Group();g.add(sb);AV.sb=sb;
-  var skin=std(0xd8966f,0.75),suit=std(0x0e0e16,0.9,0),shirt=std(0xf4f4f4,0.55),hair=std(0x2a180e,0.75),shoe=std(0x08080a,0.28,0.25),dark=std(0x07070a,0.8);
-  /* torso (leaning to the keys) */
-  var torso=new THREE.Group();sb.add(torso);AV.torso=torso;
-  var body=cy(torso,0.17,0.2,0.56,0,0,0,suit,20);body.scale.z=0.72;
-  var chest=cy(torso,0.12,0.12,0.02,0,0.12,-0.125,shirt,16);chest.scale.set(0.8,3.2,0.2);chest.rotation.x=0.05;
-  bx(torso,0.1,0.035,0.02,0,0.255,-0.13,dark,false);
-  sp(torso,0.17,0.2,0.27,0,suit,14).scale.set(0.8,0.7,0.8);sp(torso,0.17,-0.2,0.27,0,suit,14).scale.set(0.8,0.7,0.8);
-  torso.position.set(0,1.0,0.58);torso.rotation.x=-0.2;
+  var skin=std(0xd9a07c,0.55,0,{emissive:0x3a1408,emissiveIntensity:0.22});
+  var suit=std(0x0f0f14,0.78,0),shirt=std(0xf6f6f4,0.6),hair=std(0x35200f,0.55,0.05),shoe=std(0x050505,0.2,0.35);
+  var lip=std(0xb06a5a,0.5),eyeW=std(0xf6f6f6,0.3),iris=std(0x3a2a1a,0.25),dark=std(0x06060a,0.8),sole=std(0x2a2018,0.6);
+  /* arm materials can fade in first person so the keys stay visible */
+  var aSkin=skin.clone(),aSuit=suit.clone(),aShirt=shirt.clone();
+  [aSkin,aSuit,aShirt].forEach(function(m){m.transparent=true;AV.armMats.push(m);});
+  /* torso (leaning toward the keys) */
+  var torso=new THREE.Group();torso.position.set(0,0.98,0.56);torso.rotation.x=-0.2;sb.add(torso);AV.torso=torso;
+  ell(torso,1,0.2,0.25,0.14,0,0.13,0,suit,22);
+  var waist=cy(torso,0.15,0.17,0.3,0,-0.14,0,suit,22);waist.scale.z=0.76;
+  ell(torso,1,0.18,0.1,0.13,0,-0.3,0.0,suit,16);
+  var front=bx(torso,0.13,0.34,0.012,0,0.1,-0.138,shirt,false);front.rotation.x=0.04;
+  [-1,1].forEach(function(s){var lp=bx(torso,0.05,0.34,0.016,s*0.085,0.1,-0.14,suit,false);lp.rotation.z=-s*0.16;lp.rotation.x=0.04;});
+  bx(torso,0.045,0.03,0.02,-0.04,0.265,-0.145,dark,false).rotation.z=0.25;bx(torso,0.045,0.03,0.02,0.04,0.265,-0.145,dark,false).rotation.z=-0.25;
+  ell(torso,0.014,1,1,1,0,0.265,-0.148,dark,8);
+  [0.04,0.16].forEach(function(y){sp(torso,0.007,0,y,-0.146,std(0x111111,0.3,0.6),6);});
+  ell(torso,1,0.075,0.07,0.075,0.205,0.28,0,suit,12);ell(torso,1,0.075,0.07,0.075,-0.205,0.28,0,suit,12);
+  var collar=cy(torso,0.062,0.066,0.035,0,0.32,0,shirt,16);
+  /* jacket tails hanging behind over the bench */
+  [-1,1].forEach(function(s){var t0=bx(sb,0.12,0.5,0.025,s*0.075,0.5,0.9,suit);t0.rotation.x=0.08;});
   /* neck + head */
-  var neck=cy(sb,0.05,0.06,0.12,0,1.27,0.5,skin,10);
-  var head=new THREE.Group();head.position.set(0,1.37,0.44);sb.add(head);AV.head=head;
-  sp(head,0.105,0,0,0,skin,18).scale.set(0.9,1.08,1);
-  var hr=sp(head,0.112,0,0.03,0.025,hair,16);hr.scale.set(0.95,1.0,1.0);
-  [-0.038,0.038].forEach(function(x){sp(head,0.014,x,0.01,-0.095,dark,6);});
-  sp(head,0.018,0,-0.02,-0.105,skin,6);
-  sp(head,0.02,-0.092,0,0.0,skin,6);sp(head,0.02,0.092,0,0.0,skin,6);
+  var neck=cy(sb,0.048,0.056,0.14,0,1.26,0.485,skin,14);neck.rotation.x=-0.28;
+  var head=new THREE.Group();head.position.set(0,1.33,0.42);sb.add(head);AV.head=head;
+  ell(head,0.1,0.88,1.06,0.97,0,0,0,skin,24);
+  ell(head,0.07,1,0.82,0.95,0,-0.068,-0.028,skin,16);
+  ell(head,0.03,1.2,0.6,0.6,0,-0.04,-0.085,skin,10);
+  var nose=new THREE.Mesh(new THREE.ConeGeometry(0.015,0.045,10),skin);nose.rotation.x=-Math.PI/2+0.25;nose.position.set(0,-0.012,-0.1);head.add(nose);
+  [-1,1].forEach(function(s){
+    ell(head,0.0165,1.1,0.8,0.7,s*0.037,0.016,-0.087,eyeW,10);ell(head,0.0095,1,1,0.6,s*0.037,0.016,-0.097,iris,8);
+    var br=bx(head,0.036,0.006,0.01,s*0.038,0.043,-0.093,hair,false);br.rotation.z=-s*0.15;
+    ell(head,0.021,0.5,1.0,0.8,s*0.092,-0.002,0.0,skin,8);
+    bx(head,0.012,0.04,0.02,s*0.092,0.03,0.0,hair,false);
+  });
+  bx(head,0.046,0.008,0.012,0,-0.067,-0.092,lip,false);bx(head,0.036,0.007,0.01,0,-0.077,-0.09,lip,false);
+  var cap=new THREE.Mesh(new THREE.SphereGeometry(0.108,24,14,0,Math.PI*2,0,1.62),hair);cap.scale.set(0.91,1.08,1.0);cap.position.set(0,0.012,0.012);cap.rotation.x=-0.28;cap.castShadow=true;head.add(cap);
+  ell(head,0.06,1.3,1.0,0.8,0,0.0,0.07,hair,12);
   AV.headParts=[neck,head];
   /* legs on the bench */
   [-1,1].forEach(function(s){
-    var th=limb(sb,0.075,0.062,suit),sh=limb(sb,0.06,0.048,suit);
-    var hip=new THREE.Vector3(s*0.1,0.6,0.7),knee=new THREE.Vector3(s*0.115,0.62,0.3),ank=new THREE.Vector3(s*0.115,0.13,0.28);
+    var th=limb(sb,0.078,0.062,suit),sh=limb(sb,0.062,0.046,suit);
+    var hip=new THREE.Vector3(s*0.1,0.62,0.68),knee=new THREE.Vector3(s*0.115,0.64,0.3),ank=new THREE.Vector3(s*0.115,0.12,0.27);
     place(th,hip,knee);place(sh,knee,ank);
-    sp(sb,0.07,hip.x,hip.y,hip.z,suit,10);sp(sb,0.06,knee.x,knee.y,knee.z,suit,10);
-    var foot=bx(sb,0.09,0.06,0.25,s*0.115,0.05,0.2,shoe);
+    ell(sb,1,0.075,0.075,0.075,hip.x,hip.y,hip.z,suit,12);ell(sb,1,0.066,0.066,0.066,knee.x,knee.y,knee.z,suit,12);
+    var foot=new THREE.Group();foot.position.set(s*0.115,0.05,0.22);sb.add(foot);
+    bx(foot,0.092,0.06,0.2,0,0.0,0.0,shoe);ell(foot,1,0.046,0.032,0.055,0,0.005,-0.1,shoe,12);bx(foot,0.094,0.014,0.2,0,-0.032,0.0,sole,false);
+    bx(foot,0.085,0.08,0.07,0,0.055,0.08,suit,false);
     if(s===1)AV.foot=foot;
   });
-  bx(sb,0.3,0.14,0.2,0,0.58,0.7,suit);
+  bx(sb,0.3,0.14,0.2,0,0.6,0.68,suit);
   /* arms and hands */
   [-1,1].forEach(function(s,i){
-    var up=limb(g,0.058,0.05,suit),fo=limb(g,0.048,0.04,suit);
-    var cuff=limb(g,0.044,0.044,shirt);
-    var sj=sp(g,0.06,0,0,0,suit,10),ej=sp(g,0.05,0,0,0,suit,10);
-    var hand=new THREE.Group();g.add(hand);
-    var palm=bx(hand,0.092,0.024,0.085,0,0,-0.045,skin);
-    var fingers=[];
-    for(var f=0;f<4;f++){
-      var fg=bx(hand,0.019,0.016,0.072,-0.033+f*0.022,-0.002,-0.125,skin);
-      fingers.push(fg);
-    }
-    var th=bx(hand,0.02,0.016,0.055,s*-0.058,-0.004,-0.06,skin);th.rotation.y=s*0.5;
-    AV.hands.push({s:s,up:up,fo:fo,cuff:cuff,sj:sj,ej:ej,hand:hand,tx:(i===0?-0.25:0.15),ty:0.06,tz:0.06,pressed:0,x:(i===0?-0.25:0.15),y:KTOP+0.1,z:0.06,fingers:fingers});
+    var up=limb(g,0.056,0.047,aSuit),fo=limb(g,0.046,0.036,aSuit),cuff=limb(g,0.04,0.04,aShirt);
+    var sj=ell(g,1,0.06,0.06,0.06,0,0,0,aSuit,12),ej=ell(g,1,0.046,0.046,0.046,0,0,0,aSuit,12);
+    var hand=new THREE.Group();g.add(hand);hand.scale.setScalar(HSCALE);
+    ell(hand,1,0.044,0.013,0.05,0,0,-0.045,aSkin,14);
+    var fl=[0.9,1.0,0.96,0.78],fingers=[];
+    for(var f=0;f<4;f++)fingers.push(fingerChain(hand,-0.031+f*0.0205,-0.085,0.078*fl[f],0.0088,aSkin,0));
+    var thumb=fingerChain(hand,s*-0.036,-0.045,0.06,0.0098,aSkin,s*0.7);
+    AV.hands.push({s:s,up:up,fo:fo,cuff:cuff,sj:sj,ej:ej,hand:hand,fingers:fingers,thumb:thumb,fi:2,
+      tx:(i===0?-0.3:0.3),pressed:0,x:(i===0?-0.3:0.3),y:KTOP+0.14,z:0.06,keys:{}});
   });
-  g.traverse(function(o){if(o.isMesh){o.castShadow=true;}});
+  g.traverse(function(o){if(o.isMesh)o.castShadow=true;});
 }
 buildAvatar();
-var _S=new THREE.Vector3(),_W=new THREE.Vector3(),_pole=new THREE.Vector3(),_E=new THREE.Vector3();
+var _S=new THREE.Vector3(),_W=new THREE.Vector3(),_pole=new THREE.Vector3();
 function avatarKey(m,on){
   var k=keys[m];if(!k)return;
-  var x=keyX(m);
-  var H=AV.hands;
+  var x=keyX(m),H=AV.hands;
   if(on){
-    var best=0;
-    var d0=Math.abs(H[0].tx-x)+(H[0].pressed>0?0.15:0),d1=Math.abs(H[1].tx-x)+(H[1].pressed>0?0.15:0);
+    var best;
+    var d0=Math.abs(H[0].tx-x)+(H[0].pressed>0?0.18:0),d1=Math.abs(H[1].tx-x)+(H[1].pressed>0?0.18:0);
     if(H[0].pressed===0&&H[1].pressed===0)best=x<(H[0].tx+H[1].tx)/2?0:1;
     else best=d0<d1?0:1;
     var h=H[best];
-    h.pressed++;h.tx=x;h.black=k.black;h.keys=h.keys||{};h.keys[m]=true;
+    h.pressed++;h.tx=x;h.black=k.black;h.keys[m]=true;h.fi=(m%5);
     AV.idle=0;
   }else{
     for(var i=0;i<2;i++){
-      if(H[i].keys&&H[i].keys[m]){delete H[i].keys[m];H[i].pressed=Math.max(0,H[i].pressed-1);}
+      if(H[i].keys[m]){delete H[i].keys[m];H[i].pressed=Math.max(0,H[i].pressed-1);}
     }
   }
 }
@@ -1615,41 +1648,42 @@ function avatarUpdate(dt,t){
   AV.idle+=dt;
   var cx=AV.x;
   AV.sb.position.x=cx;
-  /* breathing + sway */
-  AV.torso.position.y=1.0+Math.sin(t*1.6)*0.004;
-  var H=AV.hands,i;
+  AV.torso.position.y=0.98+Math.sin(t*1.6)*0.004;
+  var fp=(viewIdx===0),H=AV.hands,i,f;
+  var fade=fp?0.42:1;
+  for(i=0;i<AV.armMats.length;i++){AV.armMats[i].opacity+=(fade-AV.armMats[i].opacity)*Math.min(1,dt*8);AV.armMats[i].depthWrite=AV.armMats[i].opacity>0.98;}
   for(i=0;i<2;i++){
     var h=H[i];
-    if(AV.idle>2.5&&h.pressed===0){h.tx=cx+(i===0?-0.28:0.28);}
-    var down=h.pressed>0;
-    var blk=down&&h.black;
-    var zW=blk?0.0:0.075;               // wrist z so that fingertips reach the key
-    var yW=KTOP+(down?0.056:0.105)+(blk?0.03:0);
+    if(AV.idle>1.5&&h.pressed===0){h.tx=cx+(i===0?-0.62:0.62);}
+    var down=h.pressed>0,blk=down&&h.black;
+    var zW=blk?0.012:0.056;
+    var yW=KTOP+(down?0.056:0.16)+(blk?0.03:0);
     var k=Math.min(1,dt*16);
-    h.x+=(h.tx-h.x)*k;h.y+=(yW-h.y)*Math.min(1,dt*(down?30:12));h.z+=(zW-h.z)*k;
-    /* shoulder (world) */
-    _S.set(cx+h.s*0.2,1.15,0.56);
+    h.x+=(h.tx-h.x)*k;h.y+=(yW-h.y)*Math.min(1,dt*(down?30:10));h.z+=(zW-h.z)*k;
+    _S.set(cx+h.s*0.2,1.12,0.55);
     _W.set(h.x,h.y,h.z);
     _pole.set(h.s*0.9,-0.6,0.25);
     var r=ik(_S,_W,ARM1,ARM2,_pole);
     place(h.up,_S,r.elbow);place(h.fo,r.elbow,r.wrist);
     h.sj.position.copy(_S);h.ej.position.copy(r.elbow);
-    _E.copy(r.wrist);_E.y+=0.0;
-    h.cuff.position.copy(r.wrist).addScaledVector(_d.subVectors(r.wrist,r.elbow).normalize(),-0.035);
-    h.cuff.quaternion.copy(h.fo.quaternion);h.cuff.scale.set(1,0.06,1);
+    h.cuff.position.copy(r.wrist).addScaledVector(_d.subVectors(r.wrist,r.elbow).normalize(),-0.03);
+    h.cuff.quaternion.copy(h.fo.quaternion);h.cuff.scale.set(1,0.05,1);
     h.hand.position.copy(r.wrist);
-    h.hand.rotation.set(down?0.28:0.12,0,0);
-    for(var f=0;f<h.fingers.length;f++){h.fingers[f].rotation.x=down?0.3+0.08*Math.sin(f*2):0.12;}
+    h.hand.rotation.set(-0.12,0,0);
+    for(f=0;f<4;f++){
+      var fg=h.fingers[f],pr=down&&f===(h.fi%4);
+      var c1=pr?-0.6:(down?-0.3:-0.18),c2=pr?-0.7:(down?-0.38:-0.22);
+      fg.c1+=(c1-fg.c1)*Math.min(1,dt*25);fg.c2+=(c2-fg.c2)*Math.min(1,dt*25);
+      fg.p1.rotation.x=fg.c1;fg.p2.rotation.x=fg.c2;
+    }
+    h.thumb.p1.rotation.x=-0.15;h.thumb.p2.rotation.x=-0.2;
   }
-  /* head follows the playing hand a little */
-  var tgx=(H[0].pressed||H[1].pressed)?((H[1].pressed?H[1].x:H[0].x)-cx):0;
-  AV.head.rotation.y+=(-tgx*0.4-AV.head.rotation.y)*Math.min(1,dt*4);
-  AV.head.rotation.x=0.35+Math.sin(t*0.7)*0.02;
-  /* pedal foot */
+  var act=H[1].pressed?H[1]:(H[0].pressed?H[0]:null);
+  var tgx=act?act.x-cx:0;
+  AV.head.rotation.y+=(-tgx*0.35-AV.head.rotation.y)*Math.min(1,dt*4);
+  AV.head.rotation.x=0.32+Math.sin(t*0.7)*0.02;
   AV.pedalT+=((pedal?1:0)-AV.pedalT)*Math.min(1,dt*12);
-  AV.foot.rotation.x=AV.pedalT*0.25;AV.foot.position.y=0.05-AV.pedalT*0.012;
-  /* first person: hide the head so the camera is not inside it */
-  var fp=(viewIdx===0);
+  AV.foot.rotation.x=-AV.pedalT*0.28;
   AV.headParts[0].visible=!fp;AV.headParts[1].visible=!fp;
 }
 
@@ -1681,7 +1715,7 @@ function loadMap(i){
    ====================================================== */
 var yaw=0,pitch=-0.62,camPos=new THREE.Vector3(0,1.24,0.66);
 var VIEWS=[
-  {name:'Сидя',pos:function(){return [seatX(),1.3,0.34];},look:null,yaw:0,pitch:-0.95},
+  {name:'Сидя',pos:function(){return [seatX(),1.26,0.31];},look:null,yaw:0,pitch:-1.0},
   {name:'Из зала',pos:function(){return mapObj.cfg.views?mapObj.cfg.views[0]:[3.4,1.6,1.4];},look:[0,0.85,-0.5]},
   {name:'Со стороны сцены',pos:function(){return mapObj.cfg.views?mapObj.cfg.views[1]:[0.6,1.7,-4.2];},look:[0,0.85,0]},
   {name:'Сверху',pos:function(){return [0,4.4,1.2];},look:[0,0.5,-0.7]}
@@ -1700,8 +1734,10 @@ function viewTarget(){
   var a=V.look?lookAngles(p,V.look):{yaw:V.yaw,pitch:V.pitch};
   return {p:p,yaw:a.yaw,pitch:a.pitch};
 }
+function baseFov(){var land=camera.aspect>=1;return viewIdx===0?(land?44:80):(land?62:100);}
 function applyView(instant){
   var T=viewTarget();
+  camera.fov=baseFov();camera.updateProjectionMatrix();
   if(instant){camPos.set(T.p[0],T.p[1],T.p[2]);yaw=T.yaw;pitch=T.pitch;tween.t=1;return;}
   tween={t:0,from:{p:camPos.clone(),yaw:yaw,pitch:pitch},to:T};
 }
@@ -1838,7 +1874,7 @@ function resize(){
   renderer.setPixelRatio(pr);
   renderer.setSize(w,h,false);
   camera.aspect=w/h;
-  camera.fov=w/h<1?100:62;
+  camera.fov=baseFov();
   camera.updateProjectionMatrix();
 }
 if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
@@ -1884,7 +1920,7 @@ function frame(ts){
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(function(ts){last=ts;requestAnimationFrame(frame);});
-window.__piano={scene:scene,renderer:renderer,lacquer:lacquer,loadMap:loadMap,setView:function(i){viewIdx=i;applyView(true);},press:pressKey,release:releaseKey,startLesson:startLesson,SONGS:SONGS,look:function(y,p){yaw=y;pitch=p;tween.t=1;}};
+window.__piano={proj:function(m){var v=keys[m].mesh.position.clone();v.z+=0.09;v.project(camera);return [(v.x+1)/2*innerWidth,(1-v.y)/2*innerHeight];},down:function(m){return downCount[m]||0;},scene:scene,renderer:renderer,lacquer:lacquer,loadMap:loadMap,setView:function(i){viewIdx=i;applyView(true);},press:pressKey,release:releaseKey,startLesson:startLesson,SONGS:SONGS,look:function(y,p){yaw=y;pitch=p;tween.t=1;}};
 })();
 
 
