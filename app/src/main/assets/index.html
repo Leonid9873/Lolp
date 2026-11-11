@@ -534,7 +534,7 @@ function inp(){return{l:K.l||TI.l,r:K.r||TI.r,gas:K.gas||TI.gas,brk:K.brk||TI.br
 /* ---------- physics ---------- */
 var P={A:28,V:66,G:7.6,N:22,sk:1,dg:1,nr:1};
 var UPS=[{k:'eng',n:'Двигатель',d:'ускорение и макс. скорость'},{k:'tur',n:'Турбо / нитро',d:'сила и зарядка нитро'},{k:'tir',n:'Шины',d:'сцепление (быстрее, но труднее в занос)'},{k:'sus',n:'Подвеска',d:'отклик руля'},{k:'dif',n:'Дифференциал',d:'длинные и управляемые заносы'}];
-var SV={coins:0,car:0,owned:[1,0,0,0,0,0],up:{eng:0,tur:0,tir:0,sus:0,dif:0}};
+var SV={coins:0,car:0,owned:[1,0,0,0,0,0,0,0],up:{eng:0,tur:0,tir:0,sus:0,dif:0}};
 try{var _s=JSON.parse(localStorage.getItem('nd_save')||'null');if(_s){SV.coins=_s.coins|0;SV.car=_s.car|0;if(_s.owned)SV.owned=_s.owned;for(var k in SV.up)SV.up[k]=Math.min(5,_s.up&&_s.up[k]|0)}}catch(e){}
 function saveSV(){try{localStorage.setItem('nd_save',JSON.stringify(SV))}catch(e){}}
 var CARS=[{n:'GT Седан',price:0,w:1,h:1,l:1,A:28,V:66,G:7.6,N:22,sk:1,dg:1,wing:0,col:0,d:'сбалансированный'},
@@ -542,7 +542,9 @@ var CARS=[{n:'GT Седан',price:0,w:1,h:1,l:1,A:28,V:66,G:7.6,N:22,sk:1,dg:1,
  {n:'Хэтч Spark',price:900,w:.9,h:1.08,l:.78,A:24,V:58,G:7,N:20,sk:1.2,dg:.95,wing:1,col:2,d:'лёгкий, резкий'},
  {n:'Маслкар V8',price:3500,w:1.08,h:.96,l:1.04,A:38,V:80,G:7,N:26,sk:.9,dg:.85,wing:0,col:4,d:'мощный, сложный'},
  {n:'Дрифт-купе S',price:2600,w:1.02,h:.88,l:.92,A:32,V:70,G:7.8,N:24,sk:1.15,dg:.82,wing:1,col:5,d:'создан для заносов'},
- {n:'Универсал',price:1200,w:1,h:1.12,l:1.12,A:25,V:60,G:7.4,N:20,sk:.95,dg:1,wing:0,col:1,d:'длинный, устойчивый'}];
+ {n:'Универсал',price:1200,w:1,h:1.12,l:1.12,A:25,V:60,G:7.4,N:20,sk:.95,dg:1,wing:0,col:1,d:'длинный, устойчивый'},
+ {n:'Kaze RX',price:2200,w:.98,h:.86,l:.9,A:30,V:70,G:8,N:23,sk:1.12,dg:.9,wing:0,col:4,d:'лёгкий японский спорткупе, высокие обороты'},
+ {n:'Alpen S5',price:3200,w:1.05,h:.98,l:1.06,A:34,V:76,G:8.2,N:25,sk:1,dg:.92,wing:0,col:3,d:'немецкий спорт-седан, ровный и быстрый'}];
 function applyTune(){var u=SV.up,C=CARS[SV.car]||CARS[0];P.A=C.A+u.eng*2.4;P.V=C.V+u.eng*3.2;P.N=C.N+u.tur*4.5;P.nr=1+u.tur*.25;P.G=C.G+u.tir*.45;P.sk=C.sk+u.sus*.07;P.dg=C.dg-u.dif*.06}
 function upCost(l){return Math.round(250*Math.pow(l+1,1.5))}
 applyTune();
