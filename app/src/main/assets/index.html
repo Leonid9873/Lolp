@@ -545,6 +545,9 @@ var CARS=[{n:'GT Седан',price:0,w:1,h:1,l:1,A:28,V:66,G:7.6,N:22,sk:1,dg:1,
  {n:'Универсал',price:1200,w:1,h:1.12,l:1.12,A:25,V:60,G:7.4,N:20,sk:.95,dg:1,wing:0,col:1,d:'длинный, устойчивый'},
  {n:'Kaze RX',price:2200,w:.98,h:.86,l:.9,A:30,V:70,G:8,N:23,sk:1.12,dg:.9,wing:0,col:4,d:'лёгкий японский спорткупе, высокие обороты'},
  {n:'Alpen S5',price:3200,w:1.05,h:.98,l:1.06,A:34,V:76,G:8.2,N:25,sk:1,dg:.92,wing:0,col:3,d:'немецкий спорт-седан, ровный и быстрый'}];
+/* ТЕСТ: true = все машины доступны бесплатно (цены остаются в C.price, ничего не покупается и не сохраняется). false = обычные цены. */
+var FREE_CARS=true;
+if(!FREE_CARS&&!SV.owned[SV.car])SV.car=0;
 function applyTune(){var u=SV.up,C=CARS[SV.car]||CARS[0];P.A=C.A+u.eng*2.4;P.V=C.V+u.eng*3.2;P.N=C.N+u.tur*4.5;P.nr=1+u.tur*.25;P.G=C.G+u.tir*.45;P.sk=C.sk+u.sus*.07;P.dg=C.dg-u.dif*.06}
 function upCost(l){return Math.round(250*Math.pow(l+1,1.5))}
 applyTune();
@@ -751,7 +754,7 @@ function showMenu(){$('menu').hidden=false;$('garage').hidden=true;setT('coinM',
 function drawGarage(){var el=$('gRows');el.innerHTML='';$('gCoin').textContent='⛁ '+SV.coins;
   var h1=document.createElement('div');h1.className='gh';h1.textContent='МАШИНЫ';el.appendChild(h1);
   CARS.forEach(function(C,i){var row=document.createElement('div');row.className='gr'+(SV.car===i?' cur':'');row.innerHTML='<div><b>'+C.n+'</b><small>'+C.d+' · мощь '+Math.round(C.A)+' · сцепл. '+C.G+'</small></div>';var b=document.createElement('button');
-    if(SV.car===i){b.textContent='ВЫБРАНА';b.disabled=true}else if(SV.owned[i]){b.textContent='ВЫБРАТЬ';b.onclick=function(){setCar(i);setColor(C.col);drawGarage()}}else{b.textContent='⛁ '+C.price;b.disabled=SV.coins<C.price;b.onclick=function(){if(SV.coins>=C.price){SV.coins-=C.price;SV.owned[i]=1;setCar(i);setColor(C.col);drawGarage()}}}
+    if(SV.car===i){b.textContent='ВЫБРАНА';b.disabled=true}else if(SV.owned[i]||FREE_CARS){b.textContent='ВЫБРАТЬ';b.onclick=function(){setCar(i);setColor(C.col);drawGarage()}}else{b.textContent='⛁ '+C.price;b.disabled=SV.coins<C.price;b.onclick=function(){if(SV.coins>=C.price){SV.coins-=C.price;SV.owned[i]=1;setCar(i);setColor(C.col);drawGarage()}}}
     row.appendChild(b);el.appendChild(row)});
   var h2=document.createElement('div');h2.className='gh';h2.textContent='ТЮНИНГ';el.appendChild(h2);
   UPS.forEach(function(u){var l=SV.up[u.k],row=document.createElement('div');row.className='gr';
